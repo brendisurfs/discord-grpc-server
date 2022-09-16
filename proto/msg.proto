@@ -2,28 +2,24 @@ syntax = "proto3";
 
 package prompt;
 
-Message Msg {
+// the message coming from the discord server.
+message Msg {
   string user_name = 1;
   string prompt = 2;
 }
 
-Message Req {
-   string user_name = 1;
-}
-
-Message Health {
-  string health = 1;
-}
 
 // ReturnPrompt - a base64 encoded jpg that got generated.
-Message ReturnPrompt {
+message ReturnPrompt {
+    string user_name = 1;
     // maybe we change this to a string later, idk.
-    bytes jpg = 1;
+    bytes jpg = 2;
 }
+
+
 
 service PromptReq {
   // when someone connects to the server.
-  rpc ConnectServer (Req) returns (Health);
   rpc SendPrompt (Msg) returns (ReturnPrompt);
 }
 
