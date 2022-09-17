@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use prompt::prompt_req_server::{PromptReq, PromptReqServer};
 use prompt::{Msg, ReturnPrompt};
-use tokio::sync::{mpsc, Mutex, RwLock};
+use tokio::sync::Mutex;
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 mod prompt {
@@ -49,12 +49,12 @@ impl PromptReq for PromptService {
         let user_name = inner_data.user_name;
         let user_prompt = inner_data.prompt;
         // -----ALL THIS DOWN HERE COMES AFTER THE BLOCKING PROCESS FINISHES.---
-        let return_image: Vec<u8> = vec![];
+        // let return_image: Vec<u8> = vec![];
 
         // send this back to the discord bot.
         let response_obj = ReturnPrompt {
             user_name: user_name.clone(),
-            jpg: user_prompt.clone().into_bytes(),
+            jpg: user_prompt.clone(),
         };
 
         let msg = Msg {
@@ -92,7 +92,6 @@ impl PromptReq for PromptService {
         //          queue.prompts.pop_back();
         //      }
         // }
-        //
         //
         Ok(Response::new(response_obj))
     }

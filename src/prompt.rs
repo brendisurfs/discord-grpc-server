@@ -12,8 +12,8 @@ pub struct ReturnPrompt {
     #[prost(string, tag="1")]
     pub user_name: ::prost::alloc::string::String,
     /// maybe we change this to a string later, idk.
-    #[prost(bytes="vec", tag="2")]
-    pub jpg: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag="2")]
+    pub jpg: ::prost::alloc::string::String,
 }
 /// Generated client implementations.
 pub mod prompt_req_client {
