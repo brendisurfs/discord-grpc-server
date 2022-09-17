@@ -81,6 +81,14 @@ impl PromptReq for PromptService {
             .try_lock()
             .expect("could not lock queue mutex");
 
+        // handle if the queue is too large.
+        // if queue.prompts.len() > 100 {
+        //     Err(Status::new(
+        //         tonic::Code::Unavailable,
+        //         "queue is full, please try again later",
+        //     ))
+        // }
+
         queue.prompts.push_back(msg);
         println!("{:#?}", queue.prompts);
 
