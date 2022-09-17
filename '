@@ -12,7 +12,7 @@ mod prompt {
 // shared data between green threads to see who is in the queue next.
 #[derive(Debug)]
 struct SharedQueue {
-	prompts: VecDeque<Msg>,
+	prompts: VecDeque<mpsc::Sender<Msg>>,
 }
 
 impl SharedQueue {
@@ -22,19 +22,19 @@ impl SharedQueue {
 		}
 	}
 
-	// async fn broadcast(&self, msg: Msg) {
-	// 	for tx in &self.prompts {
-	// 		match tx.send(msg.clone()).await {
-	// 			Ok(_) => {}
-	// 			Err(_) => {
-	// 				println!(
-	// 					"send error: to {}, {:?}",
-	// 					msg.user_name, msg.prompt
-	// 				)
-	// 			}
-	// 		}
-	// 	}
-	// }
+	async fn broadcast(&self, msg: Msg) {
+		for tx in &self.prompts {
+			match tx.send(msg.clone()).await {
+				Ok(_) => {}
+				Err(_) => {
+					println!(
+						"send error: to {}, {:?}",
+						msg.user_name, msg.prompt
+					)
+				}
+			}
+		}
+	}
 }
 
 #[derive(Debug)]
@@ -64,23 +64,14 @@ impl PromptReq for PromptService {
 		let return_image: Vec<u8> = vec![];
 
 		// send this back to the discord bot.
-		let cloned_uname = user_name.clone();
 		let response_obj = ReturnPrompt {
-			user_name: cloned_uname,
+			user_name,
 			jpg: return_image,
 		};
 
-		let msg = Msg {
-			user_name,
-			prompt: user_prompt,
-		};
-
-		let mut queue = self
-			.shared_queue
-			.try_lock()
-			.expect("could not lock queue mutex");
-
-		queue.prompts.push_back(msg);
+		let mut queue =
+			self.shared_queue.try_lock().expect("could not lock mutex");
+		queue.prompts.push_back(Msg { user_name, prompt });
 
 		Ok(Response::new(response_obj))
 	}
