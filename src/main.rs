@@ -23,20 +23,6 @@ impl SharedQueue {
             prompts: VecDeque::new(),
         }
     }
-
-    // async fn broadcast(&self, msg: Msg) {
-    // 	for tx in &self.prompts {
-    // 		match tx.send(msg.clone()).await {
-    // 			Ok(_) => {}
-    // 			Err(_) => {
-    // 				println!(
-    // 					"send error: to {}, {:?}",
-    // 					msg.user_name, msg.prompt
-    // 				)
-    // 			}
-    // 		}
-    // 	}
-    // }
 }
 
 #[derive(Debug)]
