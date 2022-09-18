@@ -1,10 +1,12 @@
 use std::collections::VecDeque;
 use std::net::SocketAddr;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use prompt::prompt_req_server::{PromptReq, PromptReqServer};
-use prompt::{Msg, ReturnPrompt};
+use prompt::{Empty, Msg, ReturnPrompt};
 use tokio::sync::Mutex;
+use tonic::codegen::futures_core::Stream;
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 mod prompt {
@@ -37,25 +39,27 @@ impl PromptService {
     }
 }
 
+type EchoResult<T> = Result<Response<T>, Status>;
+type ResponseStream = Pin<Box<dyn Stream<Item = Result<ReturnPrompt, Status>> + Send>>;
+type ServerStreamingEchoStream = ResponseStream;
+
 #[tonic::async_trait]
 impl PromptReq for PromptService {
     /// `async fn send_prompt` will handle sending back info to the discord bot.
     ///
-    async fn send_prompt(
-        &self,
-        request: Request<Msg>,
-    ) -> Result<Response<ReturnPrompt>, Status> {
+    async fn send_prompt(&self, request: Request<Msg>) -> EchoResult<ReturnPrompt> {
         let inner_data = request.into_inner();
         let user_name = inner_data.user_name;
         let user_prompt = inner_data.prompt;
         // -----ALL THIS DOWN HERE COMES AFTER THE BLOCKING PROCESS FINISHES.---
         // let return_image: Vec<u8> = vec![];
 
-        // send this back to the discord bot.
-        let response_obj = ReturnPrompt {
+        let response_object = ReturnPrompt {
             user_name: user_name.clone(),
             jpg: user_prompt.clone(),
         };
+
+        let repeater = std::iter::repeat(response_object);
 
         let msg = Msg {
             user_name,
@@ -68,33 +72,30 @@ impl PromptReq for PromptService {
             .expect("could not lock queue mutex");
 
         // handle if the queue is too large.
-        // if queue.prompts.len() > 100 {
-        //     Err(Status::new(
-        //         tonic::Code::Unavailable,
-        //         "queue is full, please try again later",
-        //     ))
-        // }
+        if queue.prompts.len() > 100 {
+            Err(Status::new(
+                tonic::Code::Unavailable,
+                "queue is full, please try again later",
+            ))
+        } else {
+            queue.prompts.push_back(msg);
 
-        queue.prompts.push_back(msg);
-        println!("{:#?}", queue.prompts);
-
-        // here is where we need to do the processing function and return some
-        // result if it works.
-        // let thread_blocking_generator_result = run_stable_diffusion_blocking(prompt);
-        // match thread_blocking_generator_result {
-        //  Ok(return_jpg) => {
-        //      let response = ReturnPrompt {
-        //              user_name: user_name.clone(),
-        //              jpg: return_jpg,
-        //          };
-        //          queue.lock().expect("could not lock queue to pop");
-        //          then pop the last value off the queue.
-        //          queue.prompts.pop_back();
-        //      }
-        // }
-        //
-        Ok(Response::new(response_obj))
+            Ok(Response::new(response_object))
+        }
     }
+
+    // async fn process_prompt(&self, request: Request<Empty>) -> EchoResult<ReturnPrompt> {
+    //     println!("not implemented");
+    //     let inner_data = request.into_inner();
+    //     let user_name = inner_data.user_name;
+    //     let user_prompt = inner_data.prompt;
+    //
+    //     let response_object = ReturnPrompt {
+    //         user_name: user_name.clone(),
+    //         jpg: user_prompt.clone(),
+    //     };
+    //     Ok()
+    // }
 }
 
 #[tokio::main]

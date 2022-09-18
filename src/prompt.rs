@@ -15,6 +15,9 @@ pub struct ReturnPrompt {
     #[prost(string, tag="2")]
     pub jpg: ::prost::alloc::string::String,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Empty {
+}
 /// Generated client implementations.
 pub mod prompt_req_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
@@ -84,7 +87,25 @@ pub mod prompt_req_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
-        /// when someone connects to the server.
+        pub async fn process_prompt(
+            &mut self,
+            request: impl tonic::IntoRequest<super::Empty>,
+        ) -> Result<tonic::Response<super::ReturnPrompt>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/prompt.PromptReq/ProcessPrompt",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         pub async fn send_prompt(
             &mut self,
             request: impl tonic::IntoRequest<super::Msg>,
@@ -113,7 +134,10 @@ pub mod prompt_req_server {
     ///Generated trait containing gRPC methods that should be implemented for use with PromptReqServer.
     #[async_trait]
     pub trait PromptReq: Send + Sync + 'static {
-        /// when someone connects to the server.
+        async fn process_prompt(
+            &self,
+            request: tonic::Request<super::Empty>,
+        ) -> Result<tonic::Response<super::ReturnPrompt>, tonic::Status>;
         async fn send_prompt(
             &self,
             request: tonic::Request<super::Msg>,
@@ -178,6 +202,44 @@ pub mod prompt_req_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
+                "/prompt.PromptReq/ProcessPrompt" => {
+                    #[allow(non_camel_case_types)]
+                    struct ProcessPromptSvc<T: PromptReq>(pub Arc<T>);
+                    impl<T: PromptReq> tonic::server::UnaryService<super::Empty>
+                    for ProcessPromptSvc<T> {
+                        type Response = super::ReturnPrompt;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::Empty>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).process_prompt(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ProcessPromptSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 "/prompt.PromptReq/SendPrompt" => {
                     #[allow(non_camel_case_types)]
                     struct SendPromptSvc<T: PromptReq>(pub Arc<T>);

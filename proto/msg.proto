@@ -16,10 +16,10 @@ message ReturnPrompt {
     string jpg = 2;
 }
 
-
+message Empty {}
 
 service PromptReq {
-  // when someone connects to the server.
+  rpc ProcessPrompt (Empty) returns (ReturnPrompt);
   rpc SendPrompt (Msg) returns (ReturnPrompt);
 }
 
