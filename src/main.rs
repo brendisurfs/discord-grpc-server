@@ -2,10 +2,13 @@ use std::collections::VecDeque;
 use std::net::SocketAddr;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::time::Duration;
 
 use prompt::prompt_req_server::{PromptReq, PromptReqServer};
-use prompt::{Empty, Msg, ReturnPrompt};
-use tokio::sync::Mutex;
+use prompt::{PromptRequest, PromptResponse};
+use tokio::sync::{mpsc, Mutex};
+use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::StreamExt;
 use tonic::codegen::futures_core::Stream;
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
@@ -16,7 +19,7 @@ mod prompt {
 // shared data between green threads to see who is in the queue next.
 #[derive(Debug)]
 struct SharedQueue {
-    prompts: VecDeque<Msg>,
+    prompts: VecDeque<PromptRequest>,
 }
 
 impl SharedQueue {
@@ -39,63 +42,64 @@ impl PromptService {
     }
 }
 
-type EchoResult<T> = Result<Response<T>, Status>;
-type ResponseStream = Pin<Box<dyn Stream<Item = Result<ReturnPrompt, Status>> + Send>>;
-type ServerStreamingEchoStream = ResponseStream;
+type PromptResult<T> = Result<Response<T>, Status>;
+type ResponseStream = Pin<Box<dyn Stream<Item = Result<PromptResponse, Status>> + Send>>;
 
 #[tonic::async_trait]
 impl PromptReq for PromptService {
     /// `async fn send_prompt` will handle sending back info to the discord bot.
-    ///
-    async fn send_prompt(&self, request: Request<Msg>) -> EchoResult<ReturnPrompt> {
+
+    // implement SendPromptStream
+    type SendPromptStream = ResponseStream;
+
+    async fn send_prompt(
+        &self,
+        request: Request<PromptRequest>,
+    ) -> PromptResult<Self::SendPromptStream> {
         let inner_data = request.into_inner();
         let user_name = inner_data.user_name;
         let user_prompt = inner_data.prompt;
         // -----ALL THIS DOWN HERE COMES AFTER THE BLOCKING PROCESS FINISHES.---
         // let return_image: Vec<u8> = vec![];
 
-        let response_object = ReturnPrompt {
+        let response_object = PromptResponse {
             user_name: user_name.clone(),
             jpg: user_prompt.clone(),
         };
 
+        // create our iterator to loop over the stream.
         let repeater = std::iter::repeat(response_object);
 
-        let msg = Msg {
-            user_name,
-            prompt: user_prompt,
-        };
+        // throttle repeater and incoming streams.
+        let throttle_duration = Duration::from_secs(1);
+        let mut stream =
+            Box::pin(tokio_stream::iter(repeater).throttle(throttle_duration));
 
-        let mut queue = self
-            .shared_queue
-            .try_lock()
-            .expect("could not lock queue mutex");
+        // little bit larger buffer size, but lets us know when something
+        // inside the loop works or doesnt.
+        let (tx, rx) = mpsc::channel(128);
 
-        // handle if the queue is too large.
-        if queue.prompts.len() > 100 {
-            Err(Status::new(
-                tonic::Code::Unavailable,
-                "queue is full, please try again later",
-            ))
-        } else {
-            queue.prompts.push_back(msg);
+        tokio::spawn(async move {
+            while let Some(item) = stream.next().await {
+                let send_item_result = tx.send(Result::<_, Status>::Ok(item)).await;
+                match send_item_result {
+                    Ok(_) => {
+                        // item (server response) was queued to send to the client.
+                    }
+                    Err(why) => {
+                        // output_stream built from rx is dropped.
+                        eprintln!("received an error: {:?}", why);
+                        break;
+                    }
+                }
+            }
+            println!("\tclient disconnected");
+        });
 
-            Ok(Response::new(response_object))
-        }
+        let output_stream = ReceiverStream::new(rx);
+
+        Ok(Response::new(Box::pin(output_stream) as ResponseStream))
     }
-
-    // async fn process_prompt(&self, request: Request<Empty>) -> EchoResult<ReturnPrompt> {
-    //     println!("not implemented");
-    //     let inner_data = request.into_inner();
-    //     let user_name = inner_data.user_name;
-    //     let user_prompt = inner_data.prompt;
-    //
-    //     let response_object = ReturnPrompt {
-    //         user_name: user_name.clone(),
-    //         jpg: user_prompt.clone(),
-    //     };
-    //     Ok()
-    // }
 }
 
 #[tokio::main]

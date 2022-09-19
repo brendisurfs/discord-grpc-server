@@ -3,23 +3,22 @@ syntax = "proto3";
 package prompt;
 
 // the message coming from the discord server.
-message Msg {
+message PromptRequest {
   string user_name = 1;
   string prompt = 2;
 }
 
 
 // ReturnPrompt - a base64 encoded jpg that got generated.
-message ReturnPrompt {
+message PromptResponse {
     string user_name = 1;
     // maybe we change this to a string later, idk.
     string jpg = 2;
 }
 
-message Empty {}
 
 service PromptReq {
-  rpc ProcessPrompt (Empty) returns (ReturnPrompt);
-  rpc SendPrompt (Msg) returns (ReturnPrompt);
+  // server side streaming, client only makes calls.
+  rpc SendPrompt (PromptRequest) returns (stream PromptResponse) {}
 }
 
