@@ -19,6 +19,6 @@ message PromptResponse {
 
 service PromptReq {
   // server side streaming, client only makes calls.
-  rpc SendPrompt (PromptRequest) returns (stream PromptResponse) {}
+  rpc SendPrompt (PromptRequest) returns (PromptResponse) {}
 }
 

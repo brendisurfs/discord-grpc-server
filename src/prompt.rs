@@ -12,8 +12,8 @@ pub struct PromptResponse {
     #[prost(string, tag="1")]
     pub user_name: ::prost::alloc::string::String,
     /// maybe we change this to a string later, idk.
-    #[prost(string, tag="2")]
-    pub jpg: ::prost::alloc::string::String,
+    #[prost(bytes="vec", tag="2")]
+    pub jpg: ::prost::alloc::vec::Vec<u8>,
 }
 /// Generated client implementations.
 pub mod prompt_req_client {
@@ -88,10 +88,7 @@ pub mod prompt_req_client {
         pub async fn send_prompt(
             &mut self,
             request: impl tonic::IntoRequest<super::PromptRequest>,
-        ) -> Result<
-            tonic::Response<tonic::codec::Streaming<super::PromptResponse>>,
-            tonic::Status,
-        > {
+        ) -> Result<tonic::Response<super::PromptResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -105,7 +102,7 @@ pub mod prompt_req_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/prompt.PromptReq/SendPrompt",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            self.inner.unary(request.into_request(), path, codec).await
         }
     }
 }
@@ -116,17 +113,11 @@ pub mod prompt_req_server {
     ///Generated trait containing gRPC methods that should be implemented for use with PromptReqServer.
     #[async_trait]
     pub trait PromptReq: Send + Sync + 'static {
-        ///Server streaming response type for the SendPrompt method.
-        type SendPromptStream: futures_core::Stream<
-                Item = Result<super::PromptResponse, tonic::Status>,
-            >
-            + Send
-            + 'static;
         /// server side streaming, client only makes calls.
         async fn send_prompt(
             &self,
             request: tonic::Request<super::PromptRequest>,
-        ) -> Result<tonic::Response<Self::SendPromptStream>, tonic::Status>;
+        ) -> Result<tonic::Response<super::PromptResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct PromptReqServer<T: PromptReq> {
@@ -190,14 +181,11 @@ pub mod prompt_req_server {
                 "/prompt.PromptReq/SendPrompt" => {
                     #[allow(non_camel_case_types)]
                     struct SendPromptSvc<T: PromptReq>(pub Arc<T>);
-                    impl<
-                        T: PromptReq,
-                    > tonic::server::ServerStreamingService<super::PromptRequest>
+                    impl<T: PromptReq> tonic::server::UnaryService<super::PromptRequest>
                     for SendPromptSvc<T> {
                         type Response = super::PromptResponse;
-                        type ResponseStream = T::SendPromptStream;
                         type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
+                            tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
@@ -221,7 +209,7 @@ pub mod prompt_req_server {
                                 accept_compression_encodings,
                                 send_compression_encodings,
                             );
-                        let res = grpc.server_streaming(method, req).await;
+                        let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
