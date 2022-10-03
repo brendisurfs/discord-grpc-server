@@ -47,6 +47,7 @@ impl PromptReq for PromptService {
         self.run_mq_client(req)
             .await
             .expect("error with run mq client");
+
         Ok(Response::new(Empty {}))
     }
     async fn send_prompt(
