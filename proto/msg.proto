@@ -21,6 +21,6 @@ message Empty {}
 service PromptReq {
   // server side streaming, client only makes calls.
   rpc ReceivePrompt (PromptRequest) returns (Empty) {}
-  rpc SendPrompt (PromptRequest) returns (PromptResponse) {}
+  rpc SendPrompt (Empty) returns (PromptResponse) {}
 }
 

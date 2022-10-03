@@ -109,7 +109,7 @@ pub mod prompt_req_client {
         }
         pub async fn send_prompt(
             &mut self,
-            request: impl tonic::IntoRequest<super::PromptRequest>,
+            request: impl tonic::IntoRequest<super::Empty>,
         ) -> Result<tonic::Response<super::PromptResponse>, tonic::Status> {
             self.inner
                 .ready()
@@ -142,7 +142,7 @@ pub mod prompt_req_server {
         ) -> Result<tonic::Response<super::Empty>, tonic::Status>;
         async fn send_prompt(
             &self,
-            request: tonic::Request<super::PromptRequest>,
+            request: tonic::Request<super::Empty>,
         ) -> Result<tonic::Response<super::PromptResponse>, tonic::Status>;
     }
     #[derive(Debug)]
@@ -245,7 +245,7 @@ pub mod prompt_req_server {
                 "/prompt.PromptReq/SendPrompt" => {
                     #[allow(non_camel_case_types)]
                     struct SendPromptSvc<T: PromptReq>(pub Arc<T>);
-                    impl<T: PromptReq> tonic::server::UnaryService<super::PromptRequest>
+                    impl<T: PromptReq> tonic::server::UnaryService<super::Empty>
                     for SendPromptSvc<T> {
                         type Response = super::PromptResponse;
                         type Future = BoxFuture<
@@ -254,7 +254,7 @@ pub mod prompt_req_server {
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::PromptRequest>,
+                            request: tonic::Request<super::Empty>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move { (*inner).send_prompt(request).await };

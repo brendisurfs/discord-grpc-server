@@ -10,10 +10,12 @@ base64 = "0.13.0"
 prost = "0.11.0"
 serde = { version = "1.0.144", features = ["derive"] }
 serde_json = "1.0.85"
+serenity = { version = "0.11.5", features = ["framework"] }
 tokio = { version = "1.21.1", features = ["full"] }
 tokio-stream = "0.1.10"
 tonic = { version = "0.8.1", features = ["gzip"] }
 tracing = "0.1.36"
+zeromq = "0.3.3"
 
 [build-dependencies]
 tonic-build = "0.8.0"
