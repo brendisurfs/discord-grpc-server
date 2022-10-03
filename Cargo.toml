@@ -6,11 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [[bin]]
 name = "mq-server"
-path = "src/server.rs"
+path = "src/bin/server.rs"
 
 [[bin]]
 name = "mq-broker"
-path = "src/broker.rs"
+path = "src/bin/broker.rs"
 
 
 [dependencies]
