@@ -1,11 +1,10 @@
-use std::path::Path;
-
 use serde::Deserialize;
-use serde_json::value::Serializer;
 use serenity::{
     http::Http,
     model::{prelude::AttachmentType, webhook::Webhook},
 };
+use std::{path::Path, time::Duration};
+use tokio::time::sleep;
 use tracing::log::info;
 use zeromq::{Socket, SocketRecv};
 
@@ -23,6 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let server_addr = "tcp://127.0.0.1:5560";
 
     let mut mq_server = zeromq::RepSocket::new();
+
     mq_server
         .connect(&server_addr)
         .await
@@ -30,11 +30,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("server started on 5560");
 
+    // next, need to init the broker.
+
     loop {
         let repl: String = mq_server.recv().await?.try_into()?;
         let serialized_repl = serde_json::from_str::<PromptMsg>(&repl).unwrap();
         info!("received msg: {serialized_repl:?}");
-
+        // simulate the processing time.
+        sleep(Duration::from_secs(10)).await;
+        // send the final image back to the server.
         build_and_send_webhook(serialized_repl.prompt).await;
     }
 }
