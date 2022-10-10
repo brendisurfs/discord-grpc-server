@@ -1,4 +1,5 @@
-use prompt::prompt_req_server::{PromptReq, PromptReqServer};
+mod common;
+use prompt::prompt_req_server::PromptReq;
 use prompt::{Empty, PromptRequest, PromptResponse};
 use serde_json::json;
 use tonic::{async_trait, Request, Response, Status};
