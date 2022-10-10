@@ -116,10 +116,13 @@ impl<'a> DreamPost<'a> {
     }
 }
 
+/// `send_webhook`
+/// sends the response from the SD service back to the Discord webhook.
 async fn send_webhook(return_prompt: String) {
     let http = Http::new("");
     let webhook_api =
         std::env::var("DISCORD_WEBHOOK").expect("webhook_api needs to be set");
+
     let attachment = AttachmentType::Path(Path::new("output/tmp.png"));
     let wh = Webhook::from_url(&http, &webhook_api)
         .await
