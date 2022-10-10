@@ -1,17 +1,9 @@
 mod common;
 use common::requestor::{self, DreamPost};
 use serde::Deserialize;
-use serenity::{
-    http::Http,
-    model::{
-        prelude::{AttachmentType, MessageFlags, UserId},
-        webhook::Webhook,
-    },
-    utils::MessageBuilder,
-};
+use serenity::model::prelude::{AttachmentType, MessageFlags, UserId};
 use std::{path::Path, time::Duration};
 use tokio::time::sleep;
-use tonic::codegen::http::uri::Port;
 use tracing::log::info;
 use zeromq::{Socket, SocketRecv};
 
@@ -48,6 +40,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 // builds a quick webhook handler and sends the webhook.
 async fn build_and_send_webhook(prompt_msg: PromptMsg) {
+    // NOTE: username should be used somehow to tag the user. Still a crucial
+    // part of this function.
     let PromptMsg { user_name, prompt } = prompt_msg;
     send_prompt_to_generator(prompt.clone())
         .await

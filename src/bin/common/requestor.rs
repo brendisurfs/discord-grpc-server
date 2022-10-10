@@ -10,6 +10,7 @@ use serenity::{
     http::Http,
     model::{prelude::AttachmentType, webhook::Webhook},
 };
+use std::error::Error;
 use tokio::{fs::File, io::AsyncWriteExt};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -61,10 +62,12 @@ impl<'a> DreamPost<'a> {
             upscale_strength: 0.75,
         }
     }
-    pub async fn send_prompt(&self) -> Result<(), Box<dyn std::error::Error>> {
-        // THIS IS SO BAD WTFF
+
+    /// `send_prompt`
+    pub async fn send_prompt(&self) -> Result<(), Box<dyn Error>> {
         dotenv::dotenv().ok();
-        let ngrok_url = "https://0837-2600-1700-5390-3400-ca6a-7aef-8949-ae8b.ngrok.io/";
+        let ngrok_url =
+            std::env::var("NGROK_URL").expect("could not get ngrok url. Is it set?");
 
         let return_prompt = &self.prompt.clone();
 
